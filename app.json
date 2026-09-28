@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "AgendaFlow",
+    "slug": "agendaflow-atividade3",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "agendaflow",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router"
+    ],
+    "android": {
+      "package": "com.agendaflow.atividade3"
+    },
+    "ios": {
+      "bundleIdentifier": "com.agendaflow.atividade3"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

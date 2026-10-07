@@ -1,24 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, InfoBanner, Pill, Screen } from '@/src/components/ui';
 import { colors, radius, shadow, spacing } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
+import { notify } from '@/src/lib/dialog';
 import { createAppointment, getAvailableSlots, getService } from '@/src/services/api';
 import type { Service, TimeSlot } from '@/src/types';
 
-function datePlus(days: number) { const d = new Date(); d.setDate(d.getDate() + days); return d.toISOString().slice(0, 10); }
+function datePlus(days: number) { const d = new Date(); d.setDate(d.getDate() + days); const p = (n: number) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
 
 export default function BookingScreen() {
   const { serviceId } = useLocalSearchParams<{ serviceId: string }>(); const { user } = useAuth(); const router = useRouter();
-  const [service, setService] = useState<Service | null>(null); const [date, setDate] = useState(datePlus(1)); const [slots, setSlots] = useState<TimeSlot[]>([]); const [selected, setSelected] = useState<TimeSlot | null>(null); const [loading, setLoading] = useState(true); const [submitting, setSubmitting] = useState(false);
+  const [service, setService] = useState<Service | null>(null); const [date, setDate] = useState(datePlus(1)); const [slots, setSlots] = useState<TimeSlot[]>([]); const [selected, setSelected] = useState<TimeSlot | null>(null); const [loading, setLoading] = useState(true); const [submitting, setSubmitting] = useState(false); const [loadError, setLoadError] = useState('');
   const dates = useMemo(() => Array.from({ length: 5 }, (_, i) => datePlus(i + 1)), []);
   useEffect(() => { getService(String(serviceId)).then(setService).catch(() => undefined); }, [serviceId]);
-  useEffect(() => { setLoading(true); getAvailableSlots(String(serviceId), date).then(setSlots).finally(() => setLoading(false)); setSelected(null); }, [serviceId, date]);
+  useEffect(() => { setLoading(true); setLoadError(''); getAvailableSlots(String(serviceId), date).then(setSlots).catch((e) => { setSlots([]); setLoadError(e instanceof Error ? e.message : 'Não foi possível carregar os horários.'); }).finally(() => setLoading(false)); setSelected(null); }, [serviceId, date]);
   async function submit() {
-    if (!user || !selected) return; setSubmitting(true);
+    if (!user || !selected || submitting) return; setSubmitting(true);
     try { const appt = await createAppointment({ clienteId: user.id, serviceId: String(serviceId), slotId: selected.id, data: selected.data, hora: selected.hora }); router.replace({ pathname: '/appointment/[id]', params: { id: appt.id } }); }
-    catch (e) { Alert.alert('Horário indisponível', e instanceof Error ? e.message : 'Não foi possível reservar.'); }
+    catch (e) { notify('Horário indisponível', e instanceof Error ? e.message : 'Não foi possível reservar.'); }
     finally { setSubmitting(false); }
   }
 
@@ -28,7 +29,7 @@ export default function BookingScreen() {
     <Text style={styles.section}>1. Escolha a data</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>{dates.map((d) => <Pressable key={d} onPress={() => setDate(d)} style={[styles.dateCard, date === d && styles.dateActive]}><Text style={[styles.dateDay, date === d && styles.dateTextActive]}>{new Date(`${d}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</Text><Text style={[styles.dateNum, date === d && styles.dateTextActive]}>{new Date(`${d}T12:00:00`).getDate()}</Text><Text style={[styles.dateMonth, date === d && styles.dateTextActive]}>{new Date(`${d}T12:00:00`).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</Text></Pressable>)}</ScrollView>
     <Text style={styles.section}>2. Escolha o horário</Text>
-    {loading ? <View style={styles.slotLoading}><Text style={styles.muted}>Carregando horários disponíveis...</Text></View> : <View style={styles.grid}>{slots.map((slot) => <Pressable disabled={!slot.disponivel} key={slot.id} onPress={() => setSelected(slot)} style={[styles.slot, !slot.disponivel && styles.slotDisabled, selected?.id === slot.id && styles.slotActive]}><Text style={[styles.slotText, selected?.id === slot.id && styles.slotTextActive]}>{slot.hora}</Text><Text style={[styles.slotCaption, selected?.id === slot.id && styles.slotTextActive]}>{slot.disponivel ? 'Disponível' : 'Ocupado'}</Text></Pressable>)}</View>}
+    {loading ? <View style={styles.slotLoading}><Text style={styles.muted}>Carregando horários disponíveis...</Text></View> : slots.length === 0 ? <View style={styles.slotLoading}><Text style={styles.muted}>{loadError || 'Nenhum horário aberto para esta data. Peça ao administrador para abrir horários.'}</Text></View> : <View style={styles.grid}>{slots.map((slot) => <Pressable disabled={!slot.disponivel} key={slot.id} onPress={() => setSelected(slot)} style={[styles.slot, !slot.disponivel && styles.slotDisabled, selected?.id === slot.id && styles.slotActive]}><Text style={[styles.slotText, selected?.id === slot.id && styles.slotTextActive]}>{slot.hora}</Text><Text style={[styles.slotCaption, selected?.id === slot.id && styles.slotTextActive]}>{slot.disponivel ? 'Disponível' : 'Ocupado'}</Text></Pressable>)}</View>}
     <InfoBanner title="Tentativa simultânea" description="Se outro usuário reservar este mesmo horário antes de você, o backend poderá recusar a solicitação. A transação garante a consistência." icon="!" tone="warning" />
     <Button title={selected ? `Confirmar ${selected.hora}` : 'Selecione um horário'} onPress={submit} loading={submitting} disabled={!selected} icon="→" />
   </ScrollView></Screen>;

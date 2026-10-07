@@ -4,20 +4,25 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AppointmentTimeline } from '@/src/components/AppointmentTimeline';
 import { Button, Pill, Screen } from '@/src/components/ui';
 import { colors, radius, shadow, spacing } from '@/src/constants/theme';
-import { getAppointment } from '@/src/services/api';
+import { cancelAppointment, getAppointment } from '@/src/services/api';
+import { confirmar, notify } from '@/src/lib/dialog';
+import { formatBRL } from '@/src/lib/format';
 import type { Appointment } from '@/src/types';
 
 export default function AppointmentScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>(); const router = useRouter(); const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const { id } = useLocalSearchParams<{ id: string }>(); const router = useRouter(); const [appointment, setAppointment] = useState<Appointment | null>(null); const [busy, setBusy] = useState(false);
   const load = useCallback(async () => { try { setAppointment(await getAppointment(String(id))); } catch {} }, [id]);
-  useEffect(() => { load(); }, [load]); useEffect(() => { const timer = setInterval(load, 2000); return () => clearInterval(timer); }, [load]);
+  useEffect(() => { load(); }, [load]); const aguardando = !appointment || appointment.status === 'PROCESSANDO';
+  useEffect(() => { if (!aguardando) return; const timer = setInterval(load, 2000); return () => clearInterval(timer); }, [load, aguardando]);
+  function cancelar() { if (!appointment) return; confirmar('Cancelar agendamento', 'O horário voltará a ficar disponível para outras pessoas.', async () => { setBusy(true); try { setAppointment(await cancelAppointment(appointment.id)); } catch (e) { notify('Não foi possível cancelar', e instanceof Error ? e.message : 'Tente novamente.'); } finally { setBusy(false); } }, 'Cancelar agendamento'); }
   if (!appointment) return <Screen><ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} /></Screen>;
-  const isConfirmed = appointment.status === 'CONFIRMADO'; const isCancelled = appointment.status === 'CANCELADO';
+  const isConfirmed = appointment.status === 'CONFIRMADO'; const isCancelled = appointment.status === 'CANCELADO' || appointment.status === 'REJEITADO';
   return <Screen padded={false}><ScrollView contentContainerStyle={styles.content}>
-    <View style={styles.header}><View><Text style={styles.kicker}>ACOMPANHAMENTO</Text><Text style={styles.title}>Seu agendamento</Text></View><View style={[styles.live, isConfirmed && styles.liveConfirmed, isCancelled && styles.liveCancelled]}><View style={styles.liveDot} /><Text style={styles.liveText}>{isConfirmed ? 'CONFIRMADO' : isCancelled ? 'CANCELADO' : 'PROCESSANDO'}</Text></View></View>
-    <View style={styles.mainCard}><View style={styles.iconBlock}><Text style={styles.icon}>✦</Text></View><View style={{ flex: 1 }}><Text style={styles.service}>{appointment.serviceName}</Text><Text style={styles.id}># {appointment.id}</Text><View style={{ marginTop: 9 }}><Pill text={appointment.status} tone={isConfirmed ? 'green' : isCancelled ? 'red' : 'orange'} /></View></View></View>
+    <View style={styles.header}><View><Text style={styles.kicker}>ACOMPANHAMENTO</Text><Text style={styles.title}>Seu agendamento</Text></View><View style={[styles.live, isConfirmed && styles.liveConfirmed, isCancelled && styles.liveCancelled]}><View style={styles.liveDot} /><Text style={styles.liveText}>{appointment.status}</Text></View></View>
+    <View style={styles.mainCard}><View style={styles.iconBlock}><Text style={styles.icon}>✦</Text></View><View style={{ flex: 1 }}><Text style={styles.service}>{appointment.serviceName}</Text><Text style={styles.id}># {appointment.id}{appointment.valor != null ? `  ·  ${formatBRL(appointment.valor)}` : ''}</Text><View style={{ marginTop: 9 }}><Pill text={appointment.status} tone={isConfirmed ? 'green' : isCancelled ? 'red' : 'orange'} /></View></View></View>
     <View style={styles.detailCard}><View style={styles.detail}><Text style={styles.detailIcon}>◷</Text><View><Text style={styles.detailLabel}>Data e horário</Text><Text style={styles.detailValue}>{new Date(`${appointment.data}T12:00:00`).toLocaleDateString('pt-BR')} às {appointment.hora}</Text></View></View><View style={styles.detail}><Text style={styles.detailIcon}>○</Text><View><Text style={styles.detailLabel}>Profissional</Text><Text style={styles.detailValue}>{appointment.profissional}</Text></View></View><View style={styles.detail}><Text style={styles.detailIcon}>⌖</Text><View><Text style={styles.detailLabel}>Local</Text><Text style={styles.detailValue}>{appointment.local}</Text></View></View></View>
-    <AppointmentTimeline status={appointment.status} />
+    <AppointmentTimeline status={appointment.status} motivo={appointment.motivo} />
+    {!isCancelled ? <View style={{ marginBottom: 10 }}><Button title="Cancelar agendamento" variant="danger" loading={busy} onPress={cancelar} /></View> : null}
     <Button title="Voltar para serviços" variant="secondary" onPress={() => router.replace('/(tabs)')} icon="←" />
   </ScrollView></Screen>;
 }

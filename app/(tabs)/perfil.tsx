@@ -1,7 +1,8 @@
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Card, Pill, Screen, SectionTitle } from '@/src/components/ui';
 import { colors, radius, spacing } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
+import { confirmar } from '@/src/lib/dialog';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -10,7 +11,7 @@ export default function ProfileScreen() {
     <Card style={styles.profileCard}><View style={styles.profileTop}><View style={styles.avatar}><Text style={styles.avatarText}>{user?.nome?.slice(0, 1).toUpperCase() || 'A'}</Text></View><View style={{ flex: 1, marginLeft: 14 }}><Text style={styles.name}>{user?.nome}</Text><Text style={styles.email}>{user?.email}</Text><Pill text={user?.role || 'COMUM'} tone={user?.role === 'ADMIN' ? 'blue' : 'gray'} /></View></View><View style={styles.line} /><View style={styles.stats}><View><Text style={styles.statValue}>AF</Text><Text style={styles.statLabel}>Perfil ativo</Text></View><View style={styles.statDivider} /><View><Text style={styles.statValue}>24/7</Text><Text style={styles.statLabel}>Acesso</Text></View></View></Card>
     <SectionTitle title="Sobre o AgendaFlow" icon="i" />
     <View style={styles.info}><View style={styles.infoIcon}><Text style={styles.infoIconText}>↗</Text></View><View style={{ flex: 1 }}><Text style={styles.infoTitle}>Fluxo assíncrono</Text><Text style={styles.infoText}>O app conversa com o Gateway por HTTP. O agendamento é processado pelos microsserviços do backend, com RabbitMQ, banco de dados e transação para lidar com concorrência.</Text></View></View>
-    <Button title="Encerrar sessão" variant="danger" onPress={() => Alert.alert('Sair', 'Deseja encerrar a sessão?', [{ text: 'Cancelar', style: 'cancel' }, { text: 'Sair', style: 'destructive', onPress: () => void signOut() }])} />
+    <Button title="Encerrar sessão" variant="danger" onPress={() => confirmar('Sair', 'Deseja encerrar a sessão?', () => void signOut(), 'Sair')} />
   </ScrollView></Screen>;
 }
 const styles = StyleSheet.create({

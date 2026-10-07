@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { BrandMark, Button, Input, Screen } from '@/src/components/ui';
 import { colors, radius, shadow, spacing } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
+import { notify } from '@/src/lib/dialog';
+import { MOCK_MODE } from '@/src/services/api';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -12,10 +14,10 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   async function submit() {
-    if (!email || !senha) return Alert.alert('Preencha os campos', 'Informe e-mail e senha.');
+    if (!email || !senha) return notify('Preencha os campos', 'Informe e-mail e senha.');
     setLoading(true);
     try { await signIn(email, senha); }
-    catch (e) { Alert.alert('Login não realizado', e instanceof Error ? e.message : 'Não foi possível entrar.'); }
+    catch (e) { notify('Login não realizado', e instanceof Error ? e.message : 'Não foi possível entrar.'); }
     finally { setLoading(false); }
   }
 
@@ -33,7 +35,7 @@ export default function LoginScreen() {
             <Button title="Entrar" onPress={submit} loading={loading} icon="→" />
             <Link href="/(auth)/register" style={styles.link}>Ainda não tenho conta</Link>
           </View>
-          <View style={styles.demo}><Text style={styles.demoTitle}>Modo demonstração</Text><Text style={styles.demoText}>Use qualquer e-mail e senha. Para testar a área admin, use um e-mail que contenha “admin”.</Text></View>
+          {MOCK_MODE ? <View style={styles.demo}><Text style={styles.demoTitle}>Modo demonstração</Text><Text style={styles.demoText}>Use qualquer e-mail e senha. Para testar a área admin, use um e-mail que contenha “admin”.</Text></View> : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

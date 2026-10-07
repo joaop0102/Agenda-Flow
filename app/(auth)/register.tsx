@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { BrandMark, Button, Input, Screen } from '@/src/components/ui';
 import { colors, radius, shadow, spacing } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
+import { notify } from '@/src/lib/dialog';
 
 export default function RegisterScreen() {
   const { signUp } = useAuth();
   const [nome, setNome] = useState(''); const [email, setEmail] = useState(''); const [senha, setSenha] = useState(''); const [loading, setLoading] = useState(false);
   async function submit() {
-    if (!nome || !email || senha.length < 6) return Alert.alert('Dados inválidos', 'Informe nome, e-mail e senha de no mínimo 6 caracteres.');
+    if (!nome || !email || senha.length < 6) return notify('Dados inválidos', 'Informe nome, e-mail e senha de no mínimo 6 caracteres.');
     setLoading(true);
     try { await signUp(nome, email, senha); }
-    catch (e) { Alert.alert('Cadastro não realizado', e instanceof Error ? e.message : 'Não foi possível cadastrar.'); }
+    catch (e) { notify('Cadastro não realizado', e instanceof Error ? e.message : 'Não foi possível cadastrar.'); }
     finally { setLoading(false); }
   }
   return <Screen><KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">

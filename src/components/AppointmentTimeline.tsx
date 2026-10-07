@@ -7,9 +7,10 @@ const steps = [
   { key: 'CONFIRMADO' as const, label: 'Horário confirmado', icon: '02' },
 ];
 
-export function AppointmentTimeline({ status }: { status: AppointmentStatus }) {
-  if (status === 'CANCELADO') {
-    return <View style={styles.cancel}><View style={styles.statusIcon}><Text style={styles.statusIconText}>!</Text></View><View style={{ flex: 1 }}><Text style={styles.cancelTitle}>Agendamento cancelado</Text><Text style={styles.cancelText}>O horário não pôde ser confirmado. Você pode escolher outra data.</Text></View></View>;
+export function AppointmentTimeline({ status, motivo }: { status: AppointmentStatus; motivo?: string | null }) {
+  if (status === 'CANCELADO' || status === 'REJEITADO') {
+    const rejeitado = status === 'REJEITADO';
+    return <View style={styles.cancel}><View style={styles.statusIcon}><Text style={styles.statusIconText}>!</Text></View><View style={{ flex: 1 }}><Text style={styles.cancelTitle}>{rejeitado ? 'Horário indisponível' : 'Agendamento cancelado'}</Text><Text style={styles.cancelText}>{rejeitado ? `${motivo || 'Outra solicitação ficou com este horário.'} Escolha outra data ou horário.` : 'Este agendamento foi cancelado e o horário voltou a ficar livre.'}</Text></View></View>;
   }
 
   const current = steps.findIndex((s) => s.key === status);

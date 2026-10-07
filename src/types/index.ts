@@ -10,6 +10,7 @@ export interface Service {
   categoria: string;
   profissional: string;
   local: string;
+  preco?: number;
   ativo: boolean;
 }
 
@@ -21,7 +22,12 @@ export interface TimeSlot {
   disponivel: boolean;
 }
 
-export type AppointmentStatus = 'PROCESSANDO' | 'CONFIRMADO' | 'CANCELADO';
+export interface SlotAdmin extends TimeSlot {
+  status: 'DISPONIVEL' | 'RESERVADO';
+  agendamentoId?: string | null;
+}
+
+export type AppointmentStatus = 'PROCESSANDO' | 'CONFIRMADO' | 'REJEITADO' | 'CANCELADO';
 export interface Appointment {
   id: string;
   clienteId: string;
@@ -31,7 +37,9 @@ export interface Appointment {
   local: string;
   data: string;
   hora: string;
+  valor?: number;
   status: AppointmentStatus;
+  motivo?: string | null;
   criadoEm: string;
 }
 
@@ -50,5 +58,13 @@ export interface CreateServicePayload {
   categoria: string;
   profissional: string;
   local: string;
+  preco: number;
   ativo: boolean;
+}
+
+export interface MonthlyReport {
+  mes: string;
+  quantidadeTotal: number;
+  valorTotal: number;
+  porServico: { servicoId: string; servicoNome: string; quantidade: number; valorTotal: number }[];
 }

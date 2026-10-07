@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Service } from '@/src/types';
 import { colors, radius, shadow, spacing } from '@/src/constants/theme';
 import { Pill } from '@/src/components/ui';
+import { formatBRL } from '@/src/lib/format';
 
 export function ServiceCard({ service, onPress }: { service: Service; onPress: () => void }) {
   return (
@@ -16,6 +17,7 @@ export function ServiceCard({ service, onPress }: { service: Service; onPress: (
         <Text style={styles.description} numberOfLines={2}>{service.descricao}</Text>
         <View style={styles.metaRow}>
           <Text style={styles.meta}>◷ {service.duracaoMinutos} min</Text>
+          {service.preco != null ? <Text style={styles.meta}>{formatBRL(service.preco)}</Text> : null}
           <Text style={styles.meta} numberOfLines={1}>● {service.profissional}</Text>
         </View>
         <View style={styles.footer}><Text style={styles.footerText}>Ver horários</Text><Text style={styles.arrow}>→</Text></View>
